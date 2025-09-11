@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyurSutra - Patient Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tiro+Devanagari+Hindi:wght@400&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hindi { font-family: 'Tiro Devanagari Hindi', serif; }
+        .card { background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .view { display: none; }
+        .view.active { display: block; }
+        #chat-fab { position: fixed; bottom: 2rem; right: 2rem; background-color: #0d47a1; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s ease; z-index: 1001; }
+        #chat-fab:hover { transform: scale(1.1); }
+        #chat-widget { position: fixed; bottom: 7rem; right: 2rem; width: 90%; max-width: 400px; height: 70vh; max-height: 500px; background-color: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: flex; flex-direction: column; transition: transform 0.3s ease-out, opacity 0.3s ease-out; transform: translateY(20px); opacity: 0; pointer-events: none; z-index: 1002; }
+        #chat-widget.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Profile Sidebar (Left) -->
+    <div id="profile-sidebar" class="sidebar fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-40 transform -translate-x-full">
+        <div class="p-5 border-b flex justify-between items-center">
+            <h2 class="font-bold text-lg text-blue-900" data-translate-key="my_profile">My Profile</h2>
+            <button id="close-profile-sidebar" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+        <nav class="p-5">
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium"><i class="fas fa-user-circle w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="view_profile">View Profile</span></a>
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-file-medical w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="medical_history">Medical History</span></a>
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-cog w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="account_settings">Account Settings</span></a>
+        </nav>
+    </div>
+
+    <!-- Main Navigation Sidebar (Right) -->
+    <div id="main-nav-sidebar" class="sidebar fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-40 transform translate-x-full">
+        <div class="p-5 border-b flex justify-between items-center">
+            <h2 class="font-bold text-lg text-blue-900" data-translate-key="menu">Menu</h2>
+            <button id="close-main-nav-sidebar" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+        <nav class="p-5">
+            <a href="#home" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium"><i class="fas fa-tachometer-alt w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="home">Home</span></a>
+            <a href="#journey" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-route w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="my_wellness_journey">My Wellness Journey</span></a>
+            <a href="#appointments" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-calendar-check w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="appointments">Appointments</span></a>
+            <a href="#feedback" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-pen-to-square w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="submit_feedback">Submit Feedback</span></a>
+            <a href="#resources" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2"><i class="fas fa-book-open w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="education">Educational Resources</span></a>
+        </nav>
+    </div>
+
+    <div id="patientDashboard">
+        <header>
+            <div style="background: linear-gradient(to right, #FF9933, #FFFFFF, #138808); height: 8px;"></div>
+            <div class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/120px-Emblem_of_India.svg.png" alt="Emblem of India" class="h-16">
+                        <div>
+                            <p class="font-semibold text-gray-700" data-translate-key="header_gov">Government of India</p>
+                            <p class="font-bold text-lg text-blue-800" data-translate-key="header_ministry">Ministry of Ayush</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                         <img src="logo.jpg" alt="AyurSutra Logo" class="h-16 w-16">
+                         <div class="border-l-2 border-gray-300 pl-4">
+                             <h1 class="text-xl sm:text-2xl font-bold text-gray-800" data-translate-key="header_app_title">AyurSutra</h1>
+                             <p class="text-sm text-gray-500" data-translate-key="header_app_subtitle">Panchakarma Management Software</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-800 text-white shadow-md">
+                <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-14">
+                    <div class="flex items-center space-x-2">
+                        <button id="profile-button" class="flex items-center space-x-3 p-2 rounded-md hover:bg-blue-700">
+                             <img class="h-9 w-9 rounded-full object-cover border-2 border-white" src="https://placehold.co/100x100/facc15/1e3a8a?text=RV" alt="Rajat Verma">
+                             <div><p class="text-sm font-semibold" data-translate-key="patient_name">Rajat Verma</p></div>
+                        </button>
+                        <div class="relative">
+                            <button id="notification-button" class="p-2 rounded-full hover:bg-blue-700 relative">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute top-0 right-0 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">2</span>
+                            </button>
+                            <div id="notification-dropdown" class="absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-20 hidden">
+                                <div class="p-3 border-b font-semibold text-gray-800" data-translate-key="notifications">Notifications</div>
+                                <div class="text-gray-700">
+                                    <a href="#" class="block px-4 py-3 hover:bg-gray-100"><strong class="font-medium text-blue-600">Reminder:</strong> Your Basti session is today at 2 PM.</a>
+                                    <a href="#" class="block px-4 py-3 hover:bg-gray-100"><strong class="font-medium text-green-600">New Message:</strong> Dr. Sharma sent you a new diet plan.</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="translateBtn" class="text-sm font-medium px-3 py-2 rounded-md hover:bg-blue-700 transition-colors duration-300 flex items-center"><i class="fas fa-language mr-2"></i><span id="translateBtnText">हिन्दी</span></button>
+                        <a href="./login.html" class="text-sm font-medium text-red-500 px-3 py-2 rounded-md hover:bg-red-100 transition-colors duration-300 flex items-center"><i class="fas fa-sign-out-alt mr-2"></i><span data-translate-key="logout">Logout</span></a>
+                        <button id="main-nav-button" class="p-2 rounded-md hover:bg-blue-700"><i class="fas fa-bars text-xl"></i></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Home View -->
+            <div id="home-view" class="view active">
+                 <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="welcome_back">Welcome, Rajat</h1>
+                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 card p-6"><h2 class="text-xl font-semibold text-gray-800 mb-4" data-translate-key="wellness_journey">My Wellness Journey</h2><div><div class="flex justify-between mb-1"><span class="text-base font-medium text-blue-700" data-translate-key="recovery_progress">Recovery Progress</span><span class="text-sm font-medium text-blue-700">80%</span></div><div class="w-full bg-gray-200 rounded-full h-4"><div class="bg-green-500 h-4 rounded-full" style="width: 80%"></div></div></div><div class="mt-6"><h3 class="font-semibold text-gray-700" data-translate-key="milestones">Your Recovery Milestones</h3><div class="mt-4 space-y-3"><div class="flex items-center text-green-600"><i class="fas fa-check-circle mr-3"></i><span class="line-through text-gray-500">Complete Pre-procedure Diet</span></div><div class="flex items-center text-green-600"><i class="fas fa-check-circle mr-3"></i><span>Complete Basti Day 3</span></div><div class="flex items-center text-blue-600"><i class="far fa-circle mr-3 text-gray-400"></i><span>Complete Basti Day 4</span></div><div class="flex items-center text-blue-600"><i class="far fa-circle mr-3 text-gray-400"></i><span>Post-Therapy Consultation</span></div></div></div></div>
+                    <div class="card p-6"><h2 class="text-xl font-semibold text-gray-800 mb-4" data-translate-key="next_appointment">Next Appointment</h2><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg"><p class="font-bold text-blue-900">Basti (Day 4 of 5)</p><p class="text-gray-700">with Dr. Ananya Sharma</p><div class="mt-2 text-lg font-semibold text-gray-800"><i class="fas fa-calendar-alt mr-2"></i>Today, Sep 12 at 2:00 PM</div><a href="#" class="text-sm text-blue-600 hover:underline mt-2 inline-block" data-translate-key="view_precautions">View Precautions</a></div></div>
+                </div>
+            </div>
+
+            <!-- My Wellness Journey View -->
+            <div id="journey-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="my_wellness_journey">My Wellness Journey</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card p-6"><h3 class="font-semibold text-gray-800 mb-4" data-translate-key="wellness_score_trend">Wellness Score Trend</h3><canvas id="wellnessScoreChart"></canvas></div>
+                    <div class="card p-6 space-y-6">
+                        <div><h4 class="font-medium text-gray-600">Energy Levels</h4><div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-green-500 h-2.5 rounded-full" style="width: 85%"></div></div></div>
+                        <div><h4 class="font-medium text-gray-600">Sleep Quality</h4><div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-blue-500 h-2.5 rounded-full" style="width: 75%"></div></div></div>
+                        <div><h4 class="font-medium text-gray-600">Digestive Health</h4><div class="w-full bg-gray-200 rounded-full h-2.5 mt-1"><div class="bg-yellow-500 h-2.5 rounded-full" style="width: 90%"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointments View -->
+            <div id="appointments-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="appointments">Appointments</h1>
+                <div class="card p-6"><h3 class="font-semibold text-gray-800 mb-4" data-translate-key="upcoming_appointments">Upcoming Appointments</h3>
+                    <div class="space-y-4">
+                         <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg"><p><span class="font-semibold text-blue-800">Basti (Day 4/5)</span> - Today, Sep 12 at 2:00 PM</p><button class="text-sm font-medium text-blue-600 hover:underline">Request Reschedule</button></div>
+                         <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg"><p><span class="font-semibold text-blue-800">Basti (Day 5/5)</span> - Tomorrow, Sep 13 at 2:00 PM</p><button class="text-sm font-medium text-blue-600 hover:underline">Request Reschedule</button></div>
+                    </div>
+                     <h3 class="font-semibold text-gray-800 my-4 pt-4 border-t" data-translate-key="past_appointments">Past Appointments</h3>
+                     <div class="space-y-2 text-sm text-gray-500">
+                        <p>Basti (Day 3/5) - Sep 11, 2025 - <span class="text-green-600 font-medium">Completed</span></p>
+                     </div>
+                </div>
+            </div>
+            
+             <!-- Feedback View -->
+             <div id="feedback-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="submit_feedback">Submit Feedback</h1>
+                <div class="card p-8 max-w-2xl mx-auto"><h3 class="text-xl font-semibold text-gray-800 mb-6" data-translate-key="share_experience">Share Your Experience</h3><form><div class="space-y-6"><div><label class="block text-sm font-medium text-gray-700" data-translate-key="overall_feeling">How are you feeling overall today?</label><div class="mt-2 flex justify-around text-4xl"><button type="button" class="hover:scale-110 transition-transform">😞</button><button type="button" class="hover:scale-110 transition-transform">😐</button><button type="button" class="hover:scale-110 transition-transform">🙂</button><button type="button" class="hover:scale-110 transition-transform">😄</button></div></div><div><label class="block text-sm font-medium text-gray-700" data-translate-key="symptoms">Any symptoms or side effects?</label><input type="text" placeholder="e.g., Mild headache, fatigue..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm font-medium text-gray-700" data-translate-key="improvements">Any improvements noticed?</label><textarea rows="4" placeholder="e.g., Feeling more energetic, better sleep..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea></div><div><button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900" data-translate-key="submit_feedback_btn">Submit Feedback</button></div></div></form></div>
+            </div>
+
+            <!-- Educational Resources View -->
+            <div id="resources-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="education">Educational Resources</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="card overflow-hidden"><img src="https://placehold.co/600x400/a5b4fc/1e3a8a?text=Ayurveda" alt="Ayurveda"><div class="p-5"><h3 class="font-semibold text-lg">The Principles of Ayurveda</h3><p class="text-sm text-gray-600 mt-2">Learn about the three doshas: Vata, Pitta, and Kapha.</p></div></div>
+                    <div class="card overflow-hidden"><img src="https://placehold.co/600x400/99f6e4/1e3a8a?text=Diet" alt="Diet"><div class="p-5"><h3 class="font-semibold text-lg">Diet After Panchakarma</h3><p class="text-sm text-gray-600 mt-2">Understand the importance of a light diet to rekindle your digestive fire.</p></div></div>
+                    <div class="card overflow-hidden"><img src="https://placehold.co/600x400/fcd34d/1e3a8a?text=Yoga" alt="Yoga"><div class="p-5"><h3 class="font-semibold text-lg">Yoga for Your Dosha</h3><p class="text-sm text-gray-600 mt-2">Discover yoga practices that help balance your specific constitution.</p></div></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- AI Helpbot -->
+    <div id="chatbot-container" class="fixed bottom-8 right-8 z-[1000]">
+        <div id="chatbot-popup" class="absolute bottom-16 right-0 bg-white p-3 rounded-lg shadow-lg text-sm text-center opacity-0 transition-opacity duration-500 ease-out pointer-events-none" style="transform: translateY(10px);"><p class="font-semibold" data-translate-key="here_to_help">Hey! Here to help with anything. 👋</p><div class="absolute -bottom-2 right-5 w-0 h-0 border-l-8 border-l-transparent border-t-8 border-t-white border-r-8 border-r-transparent"></div></div>
+        <div id="chat-fab"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10c1.848 0 3.582-.505 5.071-1.352L22 22l-1.648-4.929A9.957 9.957 0 0022 12c0-5.514-4.486-10-10-10zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M12 7c-2.757 0-5 2.243-5 5s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5zm0 8c-1.654 0-3-1.346-3-3s1.346-3 3-3 3 1.346 3 3-1.346 3-3 3z"/></svg></div>
+    </div>
+    
+    <div id="chat-widget" class=""><div class="flex flex-col h-full"><div class="bg-blue-900 text-white p-4 flex justify-between items-center rounded-t-lg"><h3 class="font-bold text-lg" data-translate-key="prakriti_assistant">Prakriti AI Assistant</h3><button id="close-chat" class="text-2xl">&times;</button></div><div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto"></div><div class="p-2 border-t flex flex-wrap gap-2"><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion1">What was my last feedback?</button><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion2">Can I reschedule my appointment?</button><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion3">Log that I have a mild headache</button></div><div class="p-4 border-t flex items-center space-x-2 bg-gray-50 rounded-b-lg"><input type="text" id="chat-input" placeholder="Ask about your therapy..." class="flex-1 w-full border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"><button id="send-chat" class="bg-blue-800 text-white rounded-full h-10 w-10 flex items-center justify-center"><i class="fas fa-paper-plane"></i></button></div></div></div>
+
+    <script>
+        // --- TRANSLATION LOGIC ---
+        const translations = {
+            en: {
+                // ... full translation map
+                my_profile: "My Profile", view_profile: "View Profile", medical_history: "Medical History", account_settings: "Account Settings",
+                menu: "Menu", home: "Home", my_wellness_journey: "My Wellness Journey", appointments: "Appointments", submit_feedback: "Submit Feedback", education: "Educational Resources",
+                header_gov: "Government of India", header_ministry: "Ministry of Ayush", header_app_title: "AyurSutra", header_app_subtitle: "Panchakarma Management Software",
+                patient_name: "Rajat Verma", logout: "Logout", notifications: "Notifications",
+                welcome_back: "Welcome, Rajat", wellness_journey: "My Wellness Journey", recovery_progress: "Recovery Progress", milestones: "Your Recovery Milestones",
+                next_appointment: "Next Appointment", view_precautions: "View Precautions",
+                wellness_score_trend: "Wellness Score Trend", upcoming_appointments: "Upcoming Appointments", past_appointments: "Past Appointments",
+                share_experience: "Share Your Experience", overall_feeling: "How are you feeling overall today?", symptoms: "Any symptoms or side effects?", improvements: "Any improvements noticed?", submit_feedback_btn: "Submit Feedback",
+                here_to_help: "Hey! Here to help with anything. 👋", prakriti_assistant: "Prakriti AI Assistant", 
+                suggestion1: "What was my last feedback?", suggestion2: "Can I reschedule my appointment?", suggestion3: "Log that I have a mild headache",
+                chat_initial_greeting: "Hello Rajat. I'm Prakriti, your personal wellness assistant. How can I help you on your wellness journey today?"
+            },
+            hi: {
+                // ... full hindi map
+                 my_profile: "मेरी प्रोफाइल", view_profile: "प्रोफ़ाइल देखें", medical_history: "चिकित्सा इतिहास", account_settings: "अकाउंट सेटिंग",
+                menu: "मेन्यू", home: "होम", my_wellness_journey: "मेरी कल्याण यात्रा", appointments: "अपॉइंटमेंट्स", submit_feedback: "प्रतिक्रिया जमा करें", education: "शैक्षिक संसाधन",
+                header_gov: "भारत सरकार", header_ministry: "आयुष मंत्रालय", header_app_title: "आयुसूत्र", header_app_subtitle: "पंचकर्म प्रबंधन सॉफ्टवेयर",
+                patient_name: "रजत वर्मा", logout: "लॉगआउट", notifications: "सूचनाएं",
+                welcome_back: "स्वागत है, रजत", wellness_journey: "मेरी कल्याण यात्रा", recovery_progress: "रिकवरी प्रगति", milestones: "आपके रिकवरी मील के पत्थर",
+                next_appointment: "अगली अपॉइंटमेंट", view_precautions: "सावधानियां देखें",
+                wellness_score_trend: "वेलनेस स्कोर ट्रेंड", upcoming_appointments: "आगामी अपॉइंटमेंट्स", past_appointments: "पिछली अपॉइंटमेंट्स",
+                share_experience: "अपना अनुभव साझा करें", overall_feeling: "आज आप कुल मिलाकर कैसा महसूस कर रहे हैं?", symptoms: "कोई लक्षण या दुष्प्रभाव?", improvements: "कोई सुधार देखा गया?", submit_feedback_btn: "प्रतिक्रिया जमा करें",
+                here_to_help: "नमस्ते! किसी भी चीज़ में मदद के लिए यहाँ हूँ। 👋", prakriti_assistant: "प्रकृति एआई सहायक", 
+                suggestion1: "मेरी आखिरी प्रतिक्रिया क्या थी?", suggestion2: "क्या मैं अपनी नियुक्ति पुनर्निर्धारित कर सकता हूँ?", suggestion3: "दर्ज करें कि मुझे हल्का सिरदर्द है",
+                chat_initial_greeting: "नमस्ते रजत। मैं प्रकृति हूं, आपकी व्यक्तिगत कल्याण सहायक। आज मैं आपकी कल्याण यात्रा में आपकी कैसे मदद कर सकती हूं?"
+            }
+        };
+
+        let currentLanguage = 'en';
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.getAttribute('data-translate-key');
+                if (translations[lang][key]) { el.innerHTML = translations[lang][key]; }
+            });
+            document.getElementById('translateBtnText').textContent = lang === 'en' ? 'हिन्दी' : 'English';
+            if(lang === 'hi') { document.body.classList.add('hindi'); } else { document.body.classList.remove('hindi'); }
+        }
+        document.getElementById('translateBtn').addEventListener('click', () => setLanguage(currentLanguage === 'en' ? 'hi' : 'en'));
+
+        // --- SPA NAVIGATION ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const views = document.querySelectorAll('.view');
+        function navigateTo(hash) {
+            views.forEach(view => view.classList.remove('active'));
+            const targetView = document.getElementById(hash.substring(1) + '-view') || document.getElementById('home-view');
+            targetView.classList.add('active');
+            if (hash === '#journey') { renderWellnessChart(); }
+            closeSidebar(mainNavSidebar);
+        }
+        navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.hash); }); });
+        
+        // --- CHARTS ---
+        let wellnessChart;
+        function renderWellnessChart() {
+            if (wellnessChart) wellnessChart.destroy();
+            const wellnessScoreChartCtx = document.getElementById('wellnessScoreChart').getContext('2d');
+            wellnessChart = new Chart(wellnessScoreChartCtx, { type: 'line', data: { labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Current'], datasets: [{ label: 'Wellness Score', data: [65, 72, 70, 78, 80], borderColor: '#3b82f6', tension: 0.2, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }] } });
+        }
+        
+        // --- UI LOGIC (SIDEBARS, NOTIFICATIONS, CHATBOT) ---
+        const userApiKey = "AIzaSyDp1j7NMv_3Xhgr1IwAWnvNbVlwZNyWTQE";
+        const profileButton = document.getElementById('profile-button');
+        const mainNavButton = document.getElementById('main-nav-button');
+        const profileSidebar = document.getElementById('profile-sidebar');
+        const mainNavSidebar = document.getElementById('main-nav-sidebar');
+        const closeProfileSidebar = document.getElementById('close-profile-sidebar');
+        const closeMainNavSidebar = document.getElementById('close-main-nav-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const notificationButton = document.getElementById('notification-button');
+        const notificationDropdown = document.getElementById('notification-dropdown');
+
+        function openSidebar(sidebar) { sidebarOverlay.classList.remove('hidden'); sidebar.classList.remove(sidebar === profileSidebar ? '-translate-x-full' : 'translate-x-full'); }
+        function closeSidebar(sidebar) { sidebarOverlay.classList.add('hidden'); sidebar.classList.add(sidebar === profileSidebar ? '-translate-x-full' : 'translate-x-full'); }
+        profileButton.addEventListener('click', () => openSidebar(profileSidebar));
+        mainNavButton.addEventListener('click', () => openSidebar(mainNavSidebar));
+        closeProfileSidebar.addEventListener('click', () => closeSidebar(profileSidebar));
+        closeMainNavSidebar.addEventListener('click', () => closeSidebar(mainNavSidebar));
+        
+        notificationButton.addEventListener('click', () => notificationDropdown.classList.toggle('hidden'));
+        
+        sidebarOverlay.addEventListener('click', () => { closeSidebar(profileSidebar); closeSidebar(mainNavSidebar); notificationDropdown.classList.add('hidden'); });
+
+        const chatFab = document.getElementById('chat-fab');
+        const chatWidget = document.getElementById('chat-widget');
+        const closeChatBtn = document.getElementById('close-chat');
+        const chatInput = document.getElementById('chat-input');
+        const sendChatBtn = document.getElementById('send-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const suggestionChips = document.querySelectorAll('.suggestion-chip');
+        let chatHistory = [];
+
+        function initializeChat() {
+             const greeting = translations[currentLanguage].chat_initial_greeting;
+             appendMessage(greeting, 'bot');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            navigateTo(window.location.hash || '#home');
+            const chatbotPopup = document.getElementById('chatbot-popup');
+            if (!sessionStorage.getItem('patientChatbotPopupShown')) {
+                 setTimeout(() => {
+                     chatbotPopup.style.opacity = '1';
+                     chatbotPopup.style.transform = 'translateY(0)';
+                     setTimeout(() => {
+                         chatbotPopup.style.opacity = '0';
+                         chatbotPopup.style.transform = 'translateY(10px)';
+                         sessionStorage.setItem('patientChatbotPopupShown', 'true');
+                     }, 4000);
+                 }, 1500);
+             }
+             initializeChat();
+        });
+        
+        chatFab.addEventListener('click', () => chatWidget.classList.toggle('visible'));
+        closeChatBtn.addEventListener('click', () => chatWidget.classList.remove('visible'));
+        
+        const sendMessage = async () => {
+            const query = chatInput.value.trim(); if (!query) return;
+            appendMessage(query, 'user'); chatInput.value = ''; 
+            chatHistory.push({ role: "user", parts: [{ text: query }] });
+            showTypingIndicator();
+            const systemPrompt = `You are Prakriti, a personal wellness assistant for a patient named Rajat Verma. **Today is Friday, September 12, 2025.** You have access to his data:
+            - **Upcoming Appointment**: Basti (Day 4 of 5) is today at 2 PM with Dr. Ananya Sharma. The next one is Basti (Day 5 of 5) tomorrow, Sep 13 at 2 PM.
+            - **Recent Feedback**: Yesterday (Sep 11), he reported feeling "much lighter and energetic."
+            - **Wellness Progress**: His overall recovery is at 80%.
+
+            Your capabilities:
+            1.  **Provide Information**: Answer questions about his schedule, precautions for upcoming therapies (e.g., for Basti, advise a light meal and to stay hydrated), and his progress.
+            2.  **Log Symptoms**: If he reports a symptom (e.g., 'I have a headache'), acknowledge it by saying 'I've logged that you have a mild headache. Please let Dr. Sharma know if it worsens.'
+            3. **Handle Rescheduling**: If he asks to reschedule, respond with 'I've sent a rescheduling request to Dr. Sharma's office. They will contact you shortly to confirm a new time.'
+            4. **Recall Information**: If asked about past feedback, state 'Your last feedback was: "Feeling much lighter and energetic."'
+            5.  **Be Supportive**: Maintain a supportive and encouraging tone.
+            The current language is ${currentLanguage}. Respond in that language.`;
+
+            try { 
+                const responseText = await callGeminiApi(chatHistory, systemPrompt); 
+                removeTypingIndicator(); appendMessage(responseText, 'bot'); 
+                chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+            } catch (error) { removeTypingIndicator(); appendMessage("An error occurred. Please try again.", 'bot'); }
+        };
+
+        const callGeminiApi = async (history, systemPrompt) => {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey}`;
+            const payload = { contents: history, systemInstruction: { parts: [{ text: systemPrompt }] }, };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+            const result = await response.json();
+            return result.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't find an answer for that.";
+        };
+
+        const appendMessage = (text, sender) => {
+            const messageDiv = document.createElement('div'); messageDiv.className = `p-2 rounded-lg max-w-[80%] ${sender === 'user' ? 'bg-blue-800 text-white self-end' : 'bg-slate-200 text-slate-800 self-start'}`;
+            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            messageDiv.innerHTML = html;
+            chatMessages.appendChild(messageDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+
+        const showTypingIndicator = () => { const typingDiv = document.createElement('div'); typingDiv.id = 'typing-indicator'; typingDiv.className = 'p-2 rounded-lg bg-slate-200 self-start'; typingDiv.innerHTML = `<div class="flex items-center space-x-2"><div class="w-2 h-2 bg-slate-500 rounded-full animate-pulse"></div><div class="w-2 h-2 bg-slate-500 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div><div class="w-2 h-2 bg-slate-500 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div></div>`; chatMessages.appendChild(typingDiv); chatMessages.scrollTop = chatMessages.scrollHeight; };
+        const removeTypingIndicator = () => { const indicator = document.getElementById('typing-indicator'); if (indicator) indicator.remove(); };
+        
+        sendChatBtn.addEventListener('click', sendMessage); 
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        suggestionChips.forEach(chip => { chip.addEventListener('click', () => { chatInput.value = chip.textContent; sendMessage(); }); });
+    </script>
+</body>
+</html>
+
+
+

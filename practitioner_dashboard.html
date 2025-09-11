@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyurSutra - Practitioner Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tiro+Devanagari+Hindi:wght@400&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .hindi {
+             font-family: 'Tiro Devanagari Hindi', serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        /* Chatbot Styles */
+        #chat-fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: #0d47a1;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+        #chat-fab:hover {
+            transform: scale(1.1);
+        }
+        #chat-widget {
+            position: fixed;
+            bottom: 7rem;
+            right: 2rem;
+            width: 90%;
+            max-width: 400px;
+            height: 70vh;
+            max-height: 500px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1002;
+        }
+        #chat-widget.visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #0d47a1;
+            color: white;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background-color: #e2e8f0;
+            color: #1e293b;
+            align-self: flex-start;
+        }
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: #0d47a1;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Profile Sidebar (Left) -->
+    <div id="profile-sidebar" class="sidebar fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-40 transform -translate-x-full">
+        <div class="p-5 border-b flex justify-between items-center">
+            <h2 class="font-bold text-lg text-blue-900" data-translate-key="my_profile">My Profile</h2>
+            <button id="close-profile-sidebar" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+        <nav class="p-5">
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium">
+                <i class="fas fa-user-circle w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="view_profile">View Profile</span>
+            </a>
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-cog w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="account_settings">Account Settings</span>
+            </a>
+            <a href="#" class="flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-question-circle w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="help_support">Help & Support</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Navigation Sidebar (Right) -->
+    <div id="main-nav-sidebar" class="sidebar fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-40 transform translate-x-full">
+        <div class="p-5 border-b flex justify-between items-center">
+            <h2 class="font-bold text-lg text-blue-900" data-translate-key="menu">Menu</h2>
+            <button id="close-main-nav-sidebar" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+        <nav class="p-5">
+            <a href="#home" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium">
+                <i class="fas fa-tachometer-alt w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="home">Home</span>
+            </a>
+            <a href="#patients" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-users w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="patient_management">Patient Management</span>
+            </a>
+            <a href="#schedule" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-calendar-alt w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="therapy_scheduling">Therapy Scheduling</span>
+            </a>
+            <a href="#feedback" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-comment-medical w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="view_feedback">View Feedback</span>
+            </a>
+            <a href="#analytics" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-100 text-gray-700 font-medium mt-2">
+                <i class="fas fa-chart-line w-6 text-center mr-3 text-blue-800"></i> <span data-translate-key="analytics_reports">Analytics & Reports</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="practitionerDashboard">
+        <header>
+            <div style="background: linear-gradient(to right, #FF9933, #FFFFFF, #138808); height: 8px;"></div>
+            <div class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/120px-Emblem_of_India.svg.png" alt="Emblem of India" class="h-16">
+                        <div>
+                            <p class="font-semibold text-gray-700" data-translate-key="header_gov">Government of India</p>
+                            <p class="font-bold text-lg text-blue-800" data-translate-key="header_ministry">Ministry of Ayush</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                         <img src="logo.jpg" alt="AyurSutra Logo" class="h-16 w-16">
+                         <div class="border-l-2 border-gray-300 pl-4">
+                             <h1 class="text-xl sm:text-2xl font-bold text-gray-800" data-translate-key="header_app_title">AyurSutra</h1>
+                             <p class="text-sm text-gray-500" data-translate-key="header_app_subtitle">Panchakarma Management Software</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-800 text-white shadow-md">
+                <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-14">
+                    <div class="flex items-center space-x-4">
+                        <button id="profile-button" class="flex items-center space-x-3 p-2 rounded-md hover:bg-blue-700">
+                             <img class="h-9 w-9 rounded-full object-cover border-2 border-white" src="https://placehold.co/100x100/a3e635/1e3a8a?text=AS" alt="Dr. Ananya Sharma">
+                             <div>
+                                <p class="text-sm font-semibold" data-translate-key="doctor_name">Dr. Ananya Sharma</p>
+                             </div>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="translateBtn" class="text-sm font-medium px-3 py-2 rounded-md hover:bg-blue-700 transition-colors duration-300 flex items-center">
+                            <i class="fas fa-language mr-2"></i><span id="translateBtnText">हिन्दी</span>
+                        </button>
+                        <a href="./login.html" class="text-sm font-medium text-red-500 px-3 py-2 rounded-md hover:bg-red-100 transition-colors duration-300 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i><span data-translate-key="logout">Logout</span>
+                        </a>
+                        <button id="main-nav-button" class="p-2 rounded-md hover:bg-blue-700">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Home View -->
+            <div id="home-view" class="view active">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="welcome_back">Welcome back, Dr. Sharma</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div class="card h-full">
+                            <div class="p-6 border-b">
+                               <h2 class="text-xl font-semibold text-gray-800" data-translate-key="upcoming_therapies">Upcoming Therapies for Today</h2>
+                               <p class="text-sm text-gray-500">Friday, September 12, 2025</p>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex items-center space-x-4 p-3 bg-slate-50 rounded-lg">
+                                   <div class="bg-blue-100 text-blue-800 rounded-lg p-3 flex flex-col items-center w-20">
+                                       <span class="text-2xl font-bold">11</span>
+                                       <span class="text-xs font-semibold">AM</span>
+                                   </div>
+                                   <div>
+                                       <p class="font-semibold text-gray-800">Anil Kumar</p>
+                                       <p class="text-sm text-gray-600"><span data-translate-key="therapy">Therapy</span>: <span class="font-medium text-green-700">Consultation</span></p>
+                                   </div>
+                                   <div class="ml-auto">
+                                       <a href="#" class="text-sm font-medium text-blue-600 hover:underline" data-translate-key="view_details">View Details</a>
+                                   </div>
+                                </div>
+                                 <div class="flex items-center space-x-4 p-3 bg-slate-50 rounded-lg">
+                                   <div class="bg-blue-100 text-blue-800 rounded-lg p-3 flex flex-col items-center w-20">
+                                       <span class="text-2xl font-bold">02</span>
+                                       <span class="text-xs font-semibold">PM</span>
+                                   </div>
+                                   <div>
+                                       <p class="font-semibold text-gray-800">Rajat Verma</p>
+                                       <p class="text-sm text-gray-600"><span data-translate-key="therapy">Therapy</span>: <span class="font-medium text-blue-700">Basti (Day 4/5)</span></p>
+                                   </div>
+                                   <div class="ml-auto">
+                                       <a href="#" class="text-sm font-medium text-blue-600 hover:underline" data-translate-key="view_details">View Details</a>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card h-full">
+                         <div class="p-6 border-b">
+                           <h2 class="text-xl font-semibold text-gray-800" data-translate-key="recent_feedback">Recent Patient Feedback</h2>
+                        </div>
+                        <div class="p-6 space-y-5">
+                            <div class="border-l-4 border-green-400 pl-4"><p class="text-sm text-gray-700">"Feeling much lighter and energetic today."</p><p class="text-xs text-gray-500 mt-1"><strong>Rajat Verma</strong> - Yesterday</p></div>
+                            <div class="border-l-4 border-red-400 pl-4"><p class="text-sm text-gray-700">"Feeling slight nausea after today's session."</p><p class="text-xs text-gray-500 mt-1"><strong>Sunita Gupta</strong> - Yesterday</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Management View -->
+            <div id="patients-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="patient_management">Patient Management</h1>
+                <div class="card">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <h3 class="font-semibold" data-translate-key="all_patients">All Patients</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium text-gray-600" data-translate-key="sort_by">Sort by:</span>
+                            <select class="text-sm border-gray-300 rounded-md shadow-sm">
+                                <option>Recent</option>
+                                <option>Oldest</option>
+                            </select>
+                            <input type="date" class="text-sm border-gray-300 rounded-md shadow-sm">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3" data-translate-key="patient_name">Patient Name</th>
+                                    <th scope="col" class="px-6 py-3" data-translate-key="last_visit">Last Visit</th>
+                                    <th scope="col" class="px-6 py-3" data-translate-key="current_therapy">Current Therapy</th>
+                                    <th scope="col" class="px-6 py-3" data-translate-key="status">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">Rajat Verma</td><td class="px-6 py-4">Sep 11, 2025</td><td class="px-6 py-4">Basti</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Active</span></td></tr>
+                                <tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">Sunita Gupta</td><td class="px-6 py-4">Sep 11, 2025</td><td class="px-6 py-4">Nasya</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Active</span></td></tr>
+                                <tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">Anil Kumar</td><td class="px-6 py-4">Sep 12, 2025</td><td class="px-6 py-4">Consultation</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Active</span></td></tr>
+                                <tr class="bg-white"><td class="px-6 py-4 font-medium text-gray-900">Priya Singh</td><td class="px-6 py-4">Aug 28, 2025</td><td class="px-6 py-4">Vamana</td><td class="px-6 py-4"><span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Completed</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Therapy Scheduling View -->
+            <div id="schedule-view" class="view">
+                 <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="therapy_scheduling">Therapy Scheduling</h1>
+                 <div class="card p-8 max-w-2xl mx-auto">
+                     <form>
+                         <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" data-translate-key="select_patient">Select Patient</label>
+                                <select class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option>Rajat Verma</option>
+                                    <option>Sunita Gupta</option>
+                                    <option>Anil Kumar</option>
+                                    <option>Priya Singh</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" data-translate-key="select_therapy">Select Therapy</label>
+                                <select class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option>Vamana</option><option>Virechana</option><option>Basti</option><option>Nasya</option><option>Raktamokshana</option><option>Consultation</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700" data-translate-key="select_date">Select Date</label>
+                                <input type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                             </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700" data-translate-key="add_instructions">Add Instructions (Optional)</label>
+                                <textarea rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                             </div>
+                             <div>
+                                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900" data-translate-key="schedule_therapy_btn">Schedule Therapy</button>
+                             </div>
+                         </div>
+                     </form>
+                 </div>
+            </div>
+
+            <!-- Feedback View -->
+            <div id="feedback-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="patient_feedback">Patient Feedback</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 card">
+                         <div class="p-4 border-b flex justify-between items-center">
+                            <h3 class="font-semibold" data-translate-key="feedback_feed">Feedback Feed</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-gray-600" data-translate-key="filter_by">Filter by:</span>
+                                <select class="text-sm border-gray-300 rounded-md shadow-sm">
+                                    <option>Newest</option><option>Oldest</option><option>Positive</option><option>Negative</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-5">
+                            <div class="border-l-4 border-green-400 pl-4"><p>"Feeling much lighter and energetic today."</p><p class="text-xs text-gray-500 mt-1"><strong>Rajat Verma</strong> - Yesterday</p></div>
+                            <div class="border-l-4 border-red-400 pl-4"><p>"Feeling slight nausea after today's session."</p><p class="text-xs text-gray-500 mt-1"><strong>Sunita Gupta</strong> - Yesterday</p></div>
+                            <div class="border-l-4 border-yellow-400 pl-4"><p>"A bit tired, but overall feeling positive."</p><p class="text-xs text-gray-500 mt-1"><strong>Priya Singh</strong> - Sep 10, 2025</p></div>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-gray-800 mb-4" data-translate-key="satisfaction_trend">Satisfaction Trend</h3>
+                        <canvas id="feedbackChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="analytics-view" class="view">
+                <h1 class="text-3xl font-bold text-blue-900 mb-6" data-translate-key="analytics_reports">Analytics & Reports</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="card p-5"><h4 class="text-sm font-medium text-gray-500" data-translate-key="total_patients">Total Patients</h4><p class="text-3xl font-bold text-blue-900">84</p></div>
+                    <div class="card p-5"><h4 class="text-sm font-medium text-gray-500" data-translate-key="therapies_this_month">Therapies this Month</h4><p class="text-3xl font-bold text-blue-900">122</p></div>
+                    <div class="card p-5"><h4 class="text-sm font-medium text-gray-500" data-translate-key="patient_satisfaction">Patient Satisfaction</h4><p class="text-3xl font-bold text-green-600">92%</p></div>
+                    <div class="card p-5"><h4 class="text-sm font-medium text-gray-500" data-translate-key="avg_treatment_duration">Avg. Treatment Duration</h4><p class="text-3xl font-bold text-blue-900">14 Days</p></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+                    <div class="lg:col-span-3 card p-6"><h3 class="font-semibold mb-4" data-translate-key="patient_growth">Patient Growth (Last 6 Months)</h3><canvas id="patientGrowthChart"></canvas></div>
+                    <div class="lg:col-span-2 card p-6"><h3 class="font-semibold mb-4" data-translate-key="therapy_distribution">Therapy Distribution</h3><canvas id="therapyDoughnutChart"></canvas></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- AI Helpbot -->
+    <div id="chatbot-container" class="fixed bottom-8 right-8 z-[1000]">
+        <div id="chatbot-popup" class="absolute bottom-16 right-0 bg-white p-3 rounded-lg shadow-lg text-sm text-center opacity-0 transition-opacity duration-500 ease-out pointer-events-none" style="transform: translateY(10px);"><p class="font-semibold" data-translate-key="here_to_assist">Here to assist! 👩‍⚕️</p><div class="absolute -bottom-2 right-5 w-0 h-0 border-l-8 border-l-transparent border-t-8 border-t-white border-r-8 border-r-transparent"></div></div>
+        <div id="chat-fab"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10c1.848 0 3.582-.505 5.071-1.352L22 22l-1.648-4.929A9.957 9.957 0 0022 12c0-5.514-4.486-10-10-10zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M12 7c-2.757 0-5 2.243-5 5s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5zm0 8c-1.654 0-3-1.346-3-3s1.346-3 3-3 3 1.346 3 3-1.346 3-3 3z"/></svg></div>
+    </div>
+    
+    <div id="chat-widget" class=""><div class="flex flex-col h-full"><div class="bg-blue-900 text-white p-4 flex justify-between items-center rounded-t-lg"><h3 class="font-bold text-lg" data-translate-key="prakriti_assistant">Prakriti AI Assistant</h3><button id="close-chat" class="text-2xl">&times;</button></div><div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto"></div><div class="p-2 border-t flex flex-wrap gap-2"><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion1">How many patients today?</button><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion2">Summarize my schedule for this week</button><button class="suggestion-chip text-xs bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1" data-translate-key="suggestion3">Who is my last appointment today?</button></div><div class="p-4 border-t flex items-center space-x-2 bg-gray-50 rounded-b-lg"><input type="text" id="chat-input" placeholder="e.g., Generate instructions..." class="flex-1 w-full border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"><button id="send-chat" class="bg-blue-800 text-white rounded-full h-10 w-10 flex items-center justify-center"><i class="fas fa-paper-plane"></i></button></div></div></div>
+
+    <script>
+        const translations = {
+            en: {
+                // ... existing keys
+                my_profile: "My Profile", view_profile: "View Profile", account_settings: "Account Settings", help_support: "Help & Support",
+                menu: "Menu", home: "Home", patient_management: "Patient Management", therapy_scheduling: "Therapy Scheduling", view_feedback: "View Feedback", analytics_reports: "Analytics & Reports",
+                header_gov: "Government of India", header_ministry: "Ministry of Ayush", header_app_title: "AyurSutra", header_app_subtitle: "Panchakarma Management Software",
+                doctor_name: "Dr. Ananya Sharma", logout: "Logout",
+                welcome_back: "Welcome back, Dr. Sharma", upcoming_therapies: "Upcoming Therapies for Today", therapy: "Therapy", view_details: "View Details", recent_feedback: "Recent Patient Feedback",
+                all_patients: "All Patients", sort_by: "Sort by:", patient_name: "Patient Name", last_visit: "Last Visit", current_therapy: "Current Therapy", status: "Status",
+                select_patient: "Select Patient", select_therapy: "Select Therapy", select_date: "Select Date", add_instructions: "Add Instructions (Optional)", schedule_therapy_btn: "Schedule Therapy",
+                patient_feedback: "Patient Feedback", feedback_feed: "Feedback Feed", filter_by: "Filter by:", satisfaction_trend: "Satisfaction Trend",
+                total_patients: "Total Patients", therapies_this_month: "Therapies this Month", patient_satisfaction: "Patient Satisfaction", avg_treatment_duration: "Avg. Treatment Duration",
+                patient_growth: "Patient Growth (Last 6 Months)", therapy_distribution: "Therapy Distribution", here_to_assist: "Here to assist! 👩‍⚕️",
+                prakriti_assistant: "Prakriti AI Assistant", suggestion1: "How many patients today?", suggestion2: "Summarize my schedule for this week", suggestion3: "Who is my last appointment today?",
+                chat_initial_greeting: "Hello Dr. Sharma. I'm Prakriti, your AI assistant. How can I help you today?",
+                chat_scheduling_confirmation: "OK. I have scheduled {therapy} for {patient} on {date}. A notification has been sent to the patient."
+            },
+            hi: {
+                // ... hindi translations
+                my_profile: "मेरी प्रोफाइल", view_profile: "प्रोफ़ाइल देखें", account_settings: "अकाउंट सेटिंग", help_support: "सहायता और समर्थन",
+                menu: "मेन्यू", home: "होम", patient_management: "रोगी प्रबंधन", therapy_scheduling: "थेरेपी शेड्यूलिंग", view_feedback: "प्रतिक्रिया देखें", analytics_reports: "एनालिटिक्स और रिपोर्ट",
+                header_gov: "भारत सरकार", header_ministry: "आयुष मंत्रालय", header_app_title: "आयुसूत्र", header_app_subtitle: "पंचकर्म प्रबंधन सॉफ्टवेयर",
+                doctor_name: "डॉ. अनन्या शर्मा", logout: "लॉगआउट",
+                welcome_back: "वापसी पर स्वागत है, डॉ. शर्मा", upcoming_therapies: "आज के लिए आगामी उपचार", therapy: "थेरेपी", view_details: "विवरण देखें", recent_feedback: "हालिया रोगी प्रतिक्रिया",
+                all_patients: "सभी रोगी", sort_by: "इसके अनुसार क्रमबद्ध करें:", patient_name: "रोगी का नाम", last_visit: "पिछली मुलाकात", current_therapy: "वर्तमान थेरेपी", status: "स्थिति",
+                select_patient: "रोगी चुनें", select_therapy: "थेरेपी चुनें", select_date: "तारीख चुनें", add_instructions: "निर्देश जोड़ें (वैकल्पिक)", schedule_therapy_btn: "थेरेपी शेड्यूल करें",
+                patient_feedback: "रोगी प्रतिक्रिया", feedback_feed: "प्रतिक्रिया फ़ीड", filter_by: "इसके अनुसार फ़िल्टर करें:", satisfaction_trend: "संतुष्टि ट्रेंड",
+                total_patients: "कुल रोगी", therapies_this_month: "इस महीने की थेरेपी", patient_satisfaction: "रोगी संतुष्टि", avg_treatment_duration: "औसत उपचार अवधि",
+                patient_growth: "रोगी वृद्धि (पिछले 6 महीने)", therapy_distribution: "थेरेपी वितरण", here_to_assist: "सहायता के लिए यहाँ हूँ! 👩‍⚕️",
+                prakriti_assistant: "प्रकृति एआई सहायक", suggestion1: "आज कितने रोगी हैं?", suggestion2: "इस सप्ताह के लिए मेरी अनुसूची का सारांश दें", suggestion3: "आज मेरी आखिरी नियुक्ति कौन है?",
+                chat_initial_greeting: "नमस्ते डॉ. शर्मा। मैं प्रकृति हूँ, आपकी एआई सहायक। आज मैं आपकी कैसे मदद कर सकती हूँ?",
+                chat_scheduling_confirmation: "ठीक है। मैंने {patient} के लिए {date} को {therapy} निर्धारित कर दी है। रोगी को एक सूचना भेज दी गई है।"
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.getAttribute('data-translate-key');
+                if (translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
+                }
+            });
+            document.getElementById('translateBtnText').textContent = lang === 'en' ? 'हिन्दी' : 'English';
+             if(lang === 'hi') { document.body.classList.add('hindi'); } else { document.body.classList.remove('hindi'); }
+        }
+
+        document.getElementById('translateBtn').addEventListener('click', () => {
+            setLanguage(currentLanguage === 'en' ? 'hi' : 'en');
+        });
+        
+        // --- PAGE NAVIGATION ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const views = document.querySelectorAll('.view');
+
+        function navigateTo(hash) {
+            views.forEach(view => view.classList.remove('active'));
+            const targetView = document.getElementById(hash.substring(1) + '-view');
+            if (targetView) {
+                targetView.classList.add('active');
+            } else {
+                document.getElementById('home-view').classList.add('active');
+            }
+            closeSidebar(mainNavSidebar);
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(link.hash);
+            });
+        });
+        
+        // --- CHARTS ---
+        const feedbackChartCtx = document.getElementById('feedbackChart').getContext('2d');
+        new Chart(feedbackChartCtx, { type: 'line', data: { labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], datasets: [{ label: 'Satisfaction', data: [75, 80, 78, 85, 90, 92], borderColor: '#16a34a', tension: 0.1 }] } });
+        
+        const patientGrowthChartCtx = document.getElementById('patientGrowthChart').getContext('2d');
+        new Chart(patientGrowthChartCtx, { type: 'bar', data: { labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], datasets: [{ label: 'New Patients', data: [8, 12, 15, 11, 18, 20], backgroundColor: '#2563eb' }] } });
+
+        const therapyDoughnutChartCtx = document.getElementById('therapyDoughnutChart').getContext('2d');
+        new Chart(therapyDoughnutChartCtx, { type: 'doughnut', data: { labels: ['Basti', 'Virechana', 'Nasya', 'Vamana'], datasets: [{ label: 'Therapies', data: [45, 25, 18, 12], backgroundColor: ['#2563eb', '#f97316', '#eab308', '#16a34a'] }] } });
+
+
+        // --- SIDEBAR LOGIC & CHATBOT ---
+        const userApiKey = "AIzaSyDp1j7NMv_3Xhgr1IwAWnvNbVlwZNyWTQE";
+        const profileButton = document.getElementById('profile-button');
+        const mainNavButton = document.getElementById('main-nav-button');
+        const profileSidebar = document.getElementById('profile-sidebar');
+        const mainNavSidebar = document.getElementById('main-nav-sidebar');
+        const closeProfileSidebar = document.getElementById('close-profile-sidebar');
+        const closeMainNavSidebar = document.getElementById('close-main-nav-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function openSidebar(sidebar) { sidebarOverlay.classList.remove('hidden'); sidebar.classList.remove(sidebar === profileSidebar ? '-translate-x-full' : 'translate-x-full'); }
+        function closeSidebar(sidebar) { sidebarOverlay.classList.add('hidden'); sidebar.classList.add(sidebar === profileSidebar ? '-translate-x-full' : 'translate-x-full'); }
+
+        profileButton.addEventListener('click', () => openSidebar(profileSidebar));
+        mainNavButton.addEventListener('click', () => openSidebar(mainNavSidebar));
+        closeProfileSidebar.addEventListener('click', () => closeSidebar(profileSidebar));
+        closeMainNavSidebar.addEventListener('click', () => closeSidebar(mainNavSidebar));
+        sidebarOverlay.addEventListener('click', () => { closeSidebar(profileSidebar); closeSidebar(mainNavSidebar); });
+
+        const chatFab = document.getElementById('chat-fab');
+        const chatWidget = document.getElementById('chat-widget');
+        const closeChatBtn = document.getElementById('close-chat');
+        const chatInput = document.getElementById('chat-input');
+        const sendChatBtn = document.getElementById('send-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const suggestionChips = document.querySelectorAll('.suggestion-chip');
+        
+        let chatHistory = [];
+
+        function initializeChat() {
+             const greeting = translations[currentLanguage].chat_initial_greeting;
+             appendMessage(greeting, 'bot');
+             // Do not add the initial greeting to history to avoid confusing the context
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            navigateTo(window.location.hash || '#home');
+            const chatbotPopup = document.getElementById('chatbot-popup');
+            if (!sessionStorage.getItem('practitionerChatbotPopupShown')) {
+                 setTimeout(() => {
+                     chatbotPopup.style.opacity = '1';
+                     chatbotPopup.style.transform = 'translateY(0)';
+                     setTimeout(() => {
+                         chatbotPopup.style.opacity = '0';
+                         chatbotPopup.style.transform = 'translateY(10px)';
+                         sessionStorage.setItem('practitionerChatbotPopupShown', 'true');
+                     }, 4000);
+                 }, 1500);
+             }
+             initializeChat();
+        });
+        
+        chatFab.addEventListener('click', () => chatWidget.classList.toggle('visible'));
+        closeChatBtn.addEventListener('click', () => chatWidget.classList.remove('visible'));
+        
+        const sendMessage = async () => {
+            const query = chatInput.value.trim(); 
+            if (!query) return;
+            
+            appendMessage(query, 'user'); 
+            chatInput.value = ''; 
+            
+            chatHistory.push({ role: "user", parts: [{ text: query }] });
+
+            showTypingIndicator();
+            
+            const systemPrompt = `You are Prakriti, a clinical AI assistant for practitioners on AyurSutra. **Today is Friday, September 12, 2025.** You have access to the following data:
+            
+            **Patient Schedule for this week:**
+            - **Anil Kumar**: Consultation on Friday, Sep 12 at 11 AM.
+            - **Rajat Verma**: Basti (Day 4/5) on Friday, Sep 12 at 2 PM; Basti (Day 5/5) on Saturday, Sep 13 at 2 PM.
+            - **Sunita Gupta**: Nasya (Day 2/3) on Saturday, Sep 13 at 12 PM; Nasya (Day 3/3) on Sunday, Sep 14 at 12 PM.
+            - **Priya Singh**: Follow-up on Monday, Sep 15 at 10 AM.
+
+            **Recent Patient Feedback:**
+            - **Rajat Verma (Positive)**: "Feeling much lighter and energetic today." (Received Yesterday)
+            - **Sunita Gupta (Negative)**: "Feeling slight nausea after today's session." (Received Yesterday)
+            - **Priya Singh (Neutral)**: "A bit tired, but overall feeling positive." (Received Sep 10, 2025)
+
+            Your capabilities:
+            1.  **Analyze Schedule & Feedback**: Answer questions about the schedule and feedback data.
+            2.  **Conversational Follow-up**: Remember previous parts of the conversation to answer follow-up questions. For example, if asked about a patient, remember that patient for the next question.
+            3.  **Automated Scheduling**: If a user asks to schedule a therapy, identify patient, therapy, and date, then respond with a confirmation.
+            4.  **Clinical Support**: Generate patient instructions, summarize procedures, or draft diet plans.
+            
+            Be concise, professional, and use markdown. The current language is ${currentLanguage}. Respond in that language.`;
+
+            try { 
+                const responseText = await callGeminiApi(chatHistory, systemPrompt); 
+                removeTypingIndicator(); 
+                appendMessage(responseText, 'bot'); 
+                chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+            } catch (error) { 
+                removeTypingIndicator(); 
+                appendMessage("An error occurred. Please check your connection and try again.", 'bot'); 
+            }
+        };
+
+        const callGeminiApi = async (history, systemPrompt) => {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey}`;
+            const payload = { 
+                contents: history, 
+                systemInstruction: { parts: [{ text: systemPrompt }] }, 
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+            const result = await response.json();
+            return result.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't find an answer for that.";
+        };
+
+        const appendMessage = (text, sender) => {
+            const messageDiv = document.createElement('div'); messageDiv.className = `chat-message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
+            messageDiv.innerHTML = html;
+            chatMessages.appendChild(messageDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+
+        const showTypingIndicator = () => { const typingDiv = document.createElement('div'); typingDiv.id = 'typing-indicator'; typingDiv.className = 'chat-message bot-message flex items-center space-x-2'; typingDiv.innerHTML = `<div class="spinner"></div> <span>Thinking...</span>`; chatMessages.appendChild(typingDiv); chatMessages.scrollTop = chatMessages.scrollHeight; };
+        const removeTypingIndicator = () => { const indicator = document.getElementById('typing-indicator'); if (indicator) indicator.remove(); };
+        
+        sendChatBtn.addEventListener('click', sendMessage); 
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        suggestionChips.forEach(chip => { 
+            chip.addEventListener('click', () => { 
+                chatInput.value = chip.textContent; 
+                sendMessage(); 
+            }); 
+        });
+
+    </script>
+</body>
+</html>
+
+
